@@ -231,16 +231,16 @@ struct private_handle_t : public native_handle {
         }
         static const int sMagic = 'gmsm';
 
-        private_handle_t(int fd, unsigned int size, int flags, int bufferType,
-                         int format, int width, int height, int eFd = -1,
+        private_handle_t(int inFd, unsigned int inSize, int inFlags, int inBufferType,
+                         int inFormat, int inWidth, int inHeight, int eFd = -1,
                          unsigned int eOffset = 0, uint64_t eBase = 0) :
-            fd(fd), fd_metadata(eFd), magic(sMagic),
-            flags(flags), size(size), offset(0), bufferType(bufferType),
+            fd(inFd), fd_metadata(eFd), magic(sMagic),
+            flags(inFlags), size(inSize), offset(0), bufferType(inBufferType),
             base(0), offset_metadata(eOffset), gpuaddr(0),
-            format(format), width(width), height(height),
+            format(inFormat), width(inWidth), height(inHeight),
             base_metadata(eBase)
         {
-            version = (int) sizeof(native_handle);
+            version = static_cast<int>(sizeof(native_handle));
             numInts = sNumInts();
             numFds = sNumFds;
         }
@@ -253,7 +253,7 @@ struct private_handle_t : public native_handle {
         }
 
         static int validate(const native_handle* h) {
-            const private_handle_t* hnd = (const private_handle_t*)h;
+            const private_handle_t* hnd = static_cast<const private_handle_t*>(h);
             if (!h || h->version != sizeof(native_handle) ||
                 h->numInts != sNumInts() || h->numFds != sNumFds ||
                 hnd->magic != sMagic)
@@ -284,7 +284,7 @@ struct private_handle_t : public native_handle {
 
         static private_handle_t* dynamicCast(const native_handle* in) {
             if (validate(in) == 0) {
-                return (private_handle_t*) in;
+                return (private_handle_t*)in;
             }
             return NULL;
         }
