@@ -65,6 +65,8 @@ DisplayError HWCBufferAllocator::Init() {
       gralloc_device_->getFunction(gralloc_device_, GRALLOC1_FUNCTION_PERFORM));
   Lock_ = reinterpret_cast<GRALLOC1_PFN_LOCK>(
       gralloc_device_->getFunction(gralloc_device_, GRALLOC1_FUNCTION_LOCK));
+  Unlock_ = reinterpret_cast<GRALLOC1_PFN_UNLOCK>(
+      gralloc_device_->getFunction(gralloc_device_, GRALLOC1_FUNCTION_UNLOCK));
 
   return kErrorNone;
 }
@@ -96,6 +98,10 @@ DisplayError HWCBufferAllocator::AllocateBuffer(BufferInfo *buffer_info) {
     alloc_flags |= GRALLOC1_PRODUCER_USAGE_PROTECTED;
   }
 
+  if (buffer_config.secure_camera) {
+    alloc_flags |= GRALLOC1_PRODUCER_USAGE_CAMERA;
+  }
+
   if (!buffer_config.cache) {
     // Allocate uncached buffers
     alloc_flags |= GRALLOC_USAGE_PRIVATE_UNCACHED;
@@ -106,7 +112,7 @@ DisplayError HWCBufferAllocator::AllocateBuffer(BufferInfo *buffer_info) {
   }
 
   uint64_t producer_usage = alloc_flags;
-  uint64_t consumer_usage = alloc_flags;
+  uint64_t consumer_usage = (alloc_flags | GRALLOC1_CONSUMER_USAGE_HWCOMPOSER);
   // CreateBuffer
   private_handle_t *hnd = nullptr;
   Perform_(gralloc_device_, GRALLOC1_MODULE_PERFORM_ALLOCATE_BUFFER, width, height, format,
@@ -394,6 +400,10 @@ DisplayError HWCBufferAllocator::MapBuffer(const private_handle_t *handle, int a
   }
 
   return kErrorNone;
+}
+
+DisplayError HWCBufferAllocator::UnmapBuffer(const private_handle_t *handle, int* release_fence) {
+  return (DisplayError)(Unlock_(gralloc_device_, handle, release_fence));
 }
 
 }  // namespace sdm
